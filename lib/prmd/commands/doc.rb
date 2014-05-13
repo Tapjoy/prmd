@@ -51,7 +51,12 @@ def extract_attributes(schema, properties)
 end
 
 def doc_type(property)
-  schema_type = property["type"].dup
+  property_type = property["type"]
+  #not all documents have to have a "type"
+  if property_type.nil?
+    return ""
+  end
+  schema_type = property_type.dup
   type = "nullable " if schema_type.delete("null")
   type.to_s + (property["format"] || schema_type.first)
 end
@@ -62,7 +67,11 @@ end
 
 module Prmd
   def self.doc(schema, options={})
-    root_url = schema['links'].find{|l| l['rel'] == 'self'}['href']
+    #assumes there's a links element in the root that we can use to figure root_url
+    #turns out schema doesnt need to have this to be 'valid', so don't assume so.
+    links = schema['links']
+    root_url = links.find{|l| l['rel'] == 'self'}['href'] if links
+    root_url = '' if root_url.nil?
 
     doc = (options[:prepend] || []).map do |path|
       File.open(path, 'r').read + "\n"
